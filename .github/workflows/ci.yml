@@ -26,6 +26,21 @@ on:
         type: string
         required: false
         default: "npm test"
+      coverage:
+        description: "Generate and upload a code coverage report"
+        type: boolean
+        required: false
+        default: false
+      coverage-command:
+        description: "Command to run the tests with coverage (used when 'coverage' is true)"
+        type: string
+        required: false
+        default: "npm run test:coverage"
+      coverage-path:
+        description: "Path to the coverage report to upload as an artifact"
+        type: string
+        required: false
+        default: "coverage"
       run-e2e:
         description: "Whether to run the end-to-end test job"
         type: boolean
@@ -65,7 +80,17 @@ jobs:
 
       - run: ${{ inputs.install-command }}
       - run: ${{ inputs.lint-command }}
-      - run: ${{ inputs.test-command }}
+
+      - name: Test
+        run: ${{ inputs.coverage && inputs.coverage-command || inputs.test-command }}
+
+      - name: Upload coverage report
+        if: ${{ inputs.coverage }}
+        uses: danielpadua/gha-actions-dependencies/.github/actions/actions/upload-artifact@latest
+        with:
+          name: coverage
+          path: ${{ inputs.coverage-path }}
+          if-no-files-found: warn
 
   e2e:
     name: E2E
