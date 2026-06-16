@@ -1,0 +1,84 @@
+name: Node.js CI reusable workflow
+
+# Generic, reusable CI for Node.js projects: a lint + unit-test quality gate,
+# plus an optional end-to-end job. All commands are configurable so it fits any
+# project that exposes npm scripts.
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node.js version to use"
+        type: string
+        required: false
+        default: "20.x"
+      install-command:
+        description: "Command to install dependencies"
+        type: string
+        required: false
+        default: "npm ci"
+      lint-command:
+        description: "Command to run the linter"
+        type: string
+        required: false
+        default: "npm run lint"
+      test-command:
+        description: "Command to run unit tests"
+        type: string
+        required: false
+        default: "npm test"
+      run-e2e:
+        description: "Whether to run the end-to-end test job"
+        type: boolean
+        required: false
+        default: false
+      e2e-install-command:
+        description: "Command to install e2e browsers/dependencies"
+        type: string
+        required: false
+        default: "npx playwright install --with-deps chromium"
+      e2e-command:
+        description: "Command to run end-to-end tests"
+        type: string
+        required: false
+        default: "npm run test:e2e"
+      runs-on:
+        description: "Runner to execute the jobs on"
+        type: string
+        required: false
+        default: "ubuntu-latest"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint-test:
+    name: Lint & Unit Tests
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - uses: danielpadua/gha-actions-dependencies/.github/actions/actions/checkout@latest
+
+      - uses: danielpadua/gha-actions-dependencies/.github/actions/actions/setup-node@latest
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: "npm"
+
+      - run: ${{ inputs.install-command }}
+      - run: ${{ inputs.lint-command }}
+      - run: ${{ inputs.test-command }}
+
+  e2e:
+    name: E2E
+    if: ${{ inputs.run-e2e }}
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - uses: danielpadua/gha-actions-dependencies/.github/actions/actions/checkout@latest
+
+      - uses: danielpadua/gha-actions-dependencies/.github/actions/actions/setup-node@latest
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: "npm"
+
+      - run: ${{ inputs.install-command }}
+      - run: ${{ inputs.e2e-install-command }}
+      - run: ${{ inputs.e2e-command }}
